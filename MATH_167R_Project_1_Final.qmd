@@ -1,0 +1,1158 @@
+---
+title: "Central Limit Theorem - How many people to make something normal?"
+subtitle: "A Monte Carlo investigation of 5 populations - symmetric, skewed, discrete, and heavy-tailed"
+author: "Tejas Manjunatha"
+date: "2026-10-12"
+format:
+  html:
+    theme: cosmo
+    title-block-banner: true
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    toc-title: "Contents"
+    number-sections: false
+    grid:
+      body-width: 1150px
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    smooth-scroll: true
+    embed-resources: true
+    fig-align: center
+    fig-width: 10
+    fig-height: 3.4
+    include-in-header:
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+          <style>
+          :root {
+            --hot: #FF3E8A;
+            --magenta: #D6246E;
+            --berry: #9C1458;
+            --coral: #FF7A59;
+            --sun: #FFC24B;
+            --grape: #8E44AD;
+            --mint: #12B5A6;
+            --blush: #FFF0F6;
+            --petal: #FFD3E6;
+            --ink: #3B2433;
+            --muted: #7A5A6C;
+          }
+          body { font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: #FFFFFF; font-size: 1.02rem; }
+          h1, h2, h3, h4, .title, .subtitle { font-family: 'Poppins', system-ui, sans-serif; }
+          h1, h2, h3, h4 { color: var(--berry); }
+          h3 { color: var(--magenta); }
+          a, a:visited { color: var(--magenta); }
+          a:hover { color: var(--coral); }
+
+          /* Title banner */
+          .quarto-title-banner {
+            background: linear-gradient(120deg, #FF3E8A 0%, #FF6F91 45%, #FF9A6B 100%) !important;
+            color: #FFFFFF !important;
+            padding-top: 2.6rem !important; padding-bottom: 2.4rem !important;
+          }
+          .quarto-title-banner .title { color: #FFFFFF; font-weight: 700; letter-spacing: -0.5px; }
+          .quarto-title-banner .subtitle { color: #FFF3F8; font-weight: 500; }
+
+          /* Section headings */
+          h1:not(.title) {
+            font-size: 1.85rem; margin-top: 2.8rem; padding: 0.45rem 0 0.45rem 1rem;
+            border-left: 7px solid var(--hot);
+            background: linear-gradient(90deg, var(--blush) 0%, #FFFFFF 75%);
+            border-radius: 0 10px 10px 0;
+          }
+          h1:not(.title) .header-section-number { color: var(--hot); }
+          h2 { padding-bottom: 0.3rem; margin-top: 2rem; border-bottom: 3px solid transparent;
+               border-image: linear-gradient(90deg, var(--hot), var(--sun)) 1; }
+
+          /* Code */
+          div.sourceCode, pre.sourceCode {
+            background-color: var(--blush) !important; border: none !important;
+            border-left: 4px solid var(--hot) !important; border-radius: 8px;
+          }
+          details.code-fold > summary {
+            display: inline-block; color: #FFFFFF; background: var(--magenta);
+            padding: 0.15rem 0.8rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;
+          }
+          details.code-fold[open] > summary { background: var(--grape); }
+
+          /* Table of contents */
+          #TOC a.active, .sidebar nav[role="doc-toc"] ul > li > a.active {
+            color: var(--hot) !important; border-left-color: var(--hot) !important; font-weight: 800;
+          }
+          #toc-title, .sidebar nav[role="doc-toc"] h2 { color: var(--berry); border: none; }
+
+          /* Tables */
+          table { font-size: 0.88rem; }
+          table thead th {
+            background: linear-gradient(90deg, var(--hot), var(--coral)) !important;
+            color: #FFFFFF !important; border-bottom: none !important; font-weight: 700;
+          }
+          table tbody tr:nth-child(even) { background-color: var(--blush); }
+          table tbody tr:hover { background-color: var(--petal); }
+
+          /* Callouts and quotes */
+          .callout { border-left-color: var(--hot) !important; border-radius: 10px !important;
+                     box-shadow: 0 6px 18px rgba(214, 36, 110, 0.12); }
+          .callout .callout-header { background-color: var(--blush) !important; }
+          .callout-title-container { color: var(--berry) !important; font-weight: 700; }
+          blockquote { border-left: 4px solid var(--coral); color: var(--muted); }
+
+          /* Figures */
+          .figure img, figure img, .cell-output-display img { border-radius: 12px; }
+          figure figcaption, .figure-caption { color: var(--muted); font-style: italic; }
+
+          /* Stat cards in the executive summary */
+          .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                       gap: 14px; margin: 1.3rem 0 1.8rem; }
+          .stat-card { background: #FFFFFF; border-radius: 14px; padding: 14px 16px;
+                       box-shadow: 0 6px 18px rgba(214, 36, 110, 0.14); border-top: 6px solid var(--hot); }
+          .stat-card:nth-child(2) { border-top-color: var(--coral); }
+          .stat-card:nth-child(3) { border-top-color: var(--sun); }
+          .stat-card:nth-child(4) { border-top-color: var(--grape); }
+          .stat-card p { margin: 0; }
+          .stat-num { display: block; font-family: 'Poppins', sans-serif; font-size: 2rem;
+                      font-weight: 700; color: var(--berry); line-height: 1.15; }
+          .stat-label { display: block; font-size: 0.88rem; color: var(--muted); }
+
+          /* Verdict tags under each population heading */
+          .tag { display: inline-block; padding: 0.15rem 0.85rem; border-radius: 999px;
+                 font-weight: 800; font-size: 0.8rem; color: #FFFFFF; letter-spacing: 0.3px; }
+          .tag-control  { background: var(--grape); }
+          .tag-fast     { background: var(--mint); }
+          .tag-moderate { background: var(--sun); color: var(--ink); }
+          .tag-slow     { background: var(--hot); }
+          .tag-fails    { background: var(--ink); }
+
+          /* The final n for each population, highlighted in the executive summary and the final table */
+          .final-n { background: #FFEBA8; color: var(--berry); font-weight: 800;
+                     padding: 0.05em 0.4em; border-radius: 6px; white-space: nowrap; }
+          .final-table table thead th:nth-child(7) { background: var(--sun) !important; color: var(--ink) !important; }
+          .final-table table tbody td:nth-child(7) { background-color: #FFF1C2 !important; box-shadow: none !important;
+                                                     color: var(--berry); font-weight: 800; }
+
+          /* Collapsible TOC "dropdowns" for each top-level section */
+          #TOC li.toc-has-children { position: relative; }
+          #TOC li.toc-has-children > a.nav-link { display: block; padding-right: 1.5rem; }
+          #TOC li.toc-has-children > ul { display: none; }
+          #TOC li.toc-has-children:not(.toc-collapsed) > ul { display: block; }
+          #TOC li.toc-has-children > .toc-toggle {
+            position: absolute; top: 0.1rem; right: 0.1rem;
+            width: 1.3rem; height: 1.3rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--muted); font-size: 0.7rem; border-radius: 50%;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+          }
+          #TOC li.toc-has-children > .toc-toggle:hover { background-color: var(--petal); color: var(--berry); }
+          #TOC li.toc-has-children.toc-collapsed > .toc-toggle { transform: rotate(-90deg); }
+          </style>
+      - text: |
+          <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            var toc = document.getElementById('TOC');
+            if (!toc) return;
+
+            // Turn every top-level TOC item that has subsections into a collapsible dropdown
+            var topItems = toc.querySelectorAll(':scope > ul.collapse > li');
+            topItems.forEach(function (li) {
+              var sublist = li.querySelector(':scope > ul');
+              if (!sublist) return;
+              li.classList.add('toc-has-children', 'toc-collapsed');
+
+              var anchor = li.querySelector(':scope > a');
+              var toggle = document.createElement('span');
+              toggle.className = 'toc-toggle';
+              toggle.setAttribute('role', 'button');
+              toggle.setAttribute('aria-label', 'Toggle subsections');
+              toggle.textContent = '\u25BE';
+              anchor.insertAdjacentElement('afterend', toggle);
+
+              toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                li.classList.toggle('toc-collapsed');
+              });
+            });
+
+            // Auto-expand the dropdown containing the currently active link
+            function expandActiveAncestors() {
+              toc.querySelectorAll('a.active').forEach(function (a) {
+                var parentLi = a.closest('li.toc-has-children');
+                if (parentLi) parentLi.classList.remove('toc-collapsed');
+              });
+            }
+            expandActiveAncestors();
+
+            // Re-expand automatically as scrolling updates which section is active
+            var observer = new MutationObserver(function (mutations) {
+              var relevant = mutations.some(function (m) {
+                return m.target.nodeType === 1 && m.target.tagName === 'A' && m.target.classList.contains('active');
+              });
+              if (relevant) expandActiveAncestors();
+            });
+            observer.observe(toc, { attributes: true, attributeFilter: ['class'], subtree: true });
+          });
+          </script>
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: params
+#| include: false
+
+# ---- Reproducibility (Seed Basis) --------------------------------------------
+student_id_last4 <- 1273   # <-- The last four digits of my student ID
+
+# ---- Simulation design ------------------------------------------------------
+B      <- 10000                              # number of simulated samples (how many times the simulation is run for each distribution)
+n_grid <- c(1, 3, 5, 10, 15, 21, 30, 50, 100, 250, 500, 1000)   # sample sizes studied (The different number of "how many people" must be sampled in order to figure out if you can be normal)
+show_n <- c(1, 5, 30, 100)                   # the sample sizes shown in the histogram and Q-Q panels
+
+# ---- My "approximately normal" criterion -------------------------------------
+crit <- list(
+  se_lo   = 0.95,    # simulated SD of x-bar / (sigma / sqrt(n)) must be in [0.95, 1.05]
+  se_hi   = 1.05,
+  # Each tail is checked on its own: the share of standardized means below -1.96 and,
+  # separately, the share above +1.96 must both be in [0.0175, 0.0325] (2.5% +/- 0.75 points).
+  # A skewed x-bar overfills one tail and starves the other, and a two-sided count lets
+  # the two cancel, so checking the tails separately is what lets the rule see skew.
+  tail_lo = 0.0175,
+  tail_hi = 0.0325
+)
+
+# ---- Colors (Pink & White Theme) ---------------------------------------------
+pal <- c(hot = "#FF3E8A", magenta = "#D6246E", berry = "#9C1458", coral = "#FF7A59",
+         sun = "#FFC24B", grape = "#8E44AD", mint = "#12B5A6",
+         petal = "#FFD3E6", blush = "#FFF0F6", ink = "#3B2433", muted = "#7A5A6C")
+dist_cols <- c(normal = "#8E44AD", die = "#12B5A6", exponential = "#FF3E8A",
+               binomial = "#FF9F1C", cauchy = "#3B2433")
+
+options(knitr.kable.NA = "—")
+```
+
+```{r}
+#| label: functions
+#| include: false
+
+# Draw B samples of size n at once and return the B sample means.
+# Rows = simulated samples, columns = observations within a sample.
+simulate_means <- function(rgen, n, B) {
+  draws <- matrix(rgen(B * n), nrow = B, ncol = n)
+  rowMeans(draws)
+}
+
+# Numerical summary of one simulated sampling distribution
+summarize_means <- function(xbar, n, d) {
+  se_theory <- if (d$finite_var) d$sigma / sqrt(n) else NA_real_
+  z <- if (d$finite_var) (xbar - d$mu) / se_theory else rep(NA_real_, length(xbar))
+  sw_p <- shapiro.test(xbar[seq_len(min(5000, length(xbar)))])$p.value  # test caps at 5,000
+  data.frame(
+    n           = n,
+    sim_mean    = mean(xbar),
+    theory_mean = d$mu,
+    sim_sd      = sd(xbar),
+    theory_se   = se_theory,
+    se_ratio    = sd(xbar) / se_theory,
+    tail_lower  = mean(z < -1.96),   # should be about 0.025
+    tail_upper  = mean(z >  1.96),   # should be about 0.025
+    iqr         = IQR(xbar),
+    sw_p        = sw_p
+  )
+}
+
+# Apply my "approximately normal" criterion to each row of a summary: the SE ratio
+# and BOTH tail rates must be inside their windows. Shape is also checked by eye in
+# the histograms and Q-Q plots; numerically, skew shows up as unequal tail rates.
+tails_ok <- function(lower, upper) {
+  lower >= crit$tail_lo & lower <= crit$tail_hi &
+    upper >= crit$tail_lo & upper <= crit$tail_hi
+}
+check_criteria <- function(s) {
+  !is.na(s$se_ratio) &
+    s$se_ratio >= crit$se_lo & s$se_ratio <= crit$se_hi &
+    tails_ok(s$tail_lower, s$tail_upper)
+}
+
+# Smallest n at which the criterion is met AND stays met for every larger n
+first_stable_n <- function(n, ok) {
+  for (i in seq_along(n)) if (all(ok[i:length(ok)])) return(n[i])
+  NA
+}
+
+# ---- Exact check (no simulation noise) ----------------------------------------
+# For the four finite-variance populations the exact distribution of the sum
+# S = n * x-bar is known, so P(Z_n < -1.96) and P(Z_n > +1.96) can be computed
+# exactly for every n = 1, ..., n_max.
+exact_tails <- function(k, n_max = max(n_grid)) {
+  d  <- dists[[k]]
+  n  <- seq_len(n_max)
+  lo <- n * d$mu - 1.96 * d$sigma * sqrt(n)    # S below lo  <=>  Z_n < -1.96
+  hi <- n * d$mu + 1.96 * d$sigma * sqrt(n)    # S above hi  <=>  Z_n > +1.96
+  tails <- switch(k,
+    normal      = cbind(rep(pnorm(-1.96), n_max), rep(pnorm(-1.96), n_max)),  # x-bar is exactly normal
+    exponential = cbind(pgamma(pmax(lo, 0), shape = n, rate = 1),              # S ~ Gamma(n, 1)
+                        pgamma(hi, shape = n, rate = 1, lower.tail = FALSE)),
+    binomial    = cbind(pbinom(ceiling(lo) - 1, size = 5 * n, prob = 0.10),    # S ~ Binomial(5n, 0.10)
+                        pbinom(floor(hi), size = 5 * n, prob = 0.10, lower.tail = FALSE)),
+    die         = {                              # S = sum of n dice, built up one die at a time
+      out <- matrix(NA_real_, n_max, 2)
+      p <- 1                                     # p[i] = P(S = m + i - 1) after m dice
+      for (m in n) {
+        q <- numeric(length(p) + 5)
+        for (j in 0:5) q[j + seq_along(p)] <- q[j + seq_along(p)] + p / 6
+        p <- q
+        s <- m:(6 * m)
+        out[m, ] <- c(sum(p[s < lo[m]]), sum(p[s > hi[m]]))
+      }
+      out
+    })
+  data.frame(n = n, lower = tails[, 1], upper = tails[, 2])
+}
+
+# Run the full experiment for one population
+run_distribution <- function(d, seed) {
+  set.seed(seed)
+  population <- d$rgen(B)                       # one big sample to picture the population
+  means <- lapply(n_grid, function(n) simulate_means(d$rgen, n, B))
+  names(means) <- n_grid
+  summ <- do.call(rbind, Map(function(xbar, n) summarize_means(xbar, n, d), means, n_grid))
+  rownames(summ) <- NULL
+  summ$normal_enough <- check_criteria(summ)
+  list(d = d, population = population, means = means, summary = summ,
+       first_n = first_stable_n(summ$n, summ$normal_enough))
+}
+
+# ---- Formatting helpers ------------------------------------------------------
+f <- function(x, digits = 2) {
+  ifelse(is.na(x), "undefined", formatC(x, format = "f", digits = digits))
+}
+fmt_p <- function(p) ifelse(p < 0.001, "< 0.001", formatC(p, format = "f", digits = 3))
+p_eq  <- function(p) if (p < 0.001) "p < 0.001" else paste("p =", formatC(p, format = "f", digits = 3))
+pct   <- function(x, digits = 1) paste0(formatC(100 * x, format = "f", digits = digits), "%")
+at_n  <- function(dist, n, col) {
+  s <- results[[dist]]$summary
+  s[s$n == n, col]
+}
+ex_at <- function(dist, n, side) exact[[dist]][[side]][n]   # exact tail probability at sample size n
+exact_fails <- function(dist, from, to) {                     # sample sizes from..to that fail exactly
+  e <- exact[[dist]][from:to, ]
+  e$n[!tails_ok(e$lower, e$upper)]
+}
+show_first_n <- function(dist) {
+  x <- results[[dist]]$first_n
+  if (is.na(x)) paste0("never (within n ≤ ", max(n_grid), ")") else x
+}
+show_exact_n <- function(dist) {
+  if (!dist %in% names(exact_n) || is.na(exact_n[[dist]])) "never" else exact_n[[dist]]
+}
+
+# ---- Plot helpers ------------------------------------------------------------
+style_par <- function(...) {
+  par(col.main = pal[["berry"]], col.lab = pal[["ink"]], col.axis = pal[["muted"]],
+      fg = pal[["muted"]], bty = "l", las = 1, font.main = 2, ...)
+}
+
+plot_population <- function(r) {
+  d <- r$d
+  op <- style_par(mar = c(4.2, 4.2, 3, 1))
+  on.exit(par(op))
+  if (isTRUE(d$discrete)) {
+    barplot(d$pmf$p, names.arg = d$pmf$x, col = pal[["hot"]], border = "white",
+            main = paste("Population:", d$name), xlab = "x", ylab = "P(X = x)")
+  } else {
+    x <- r$population
+    x <- x[x >= d$support[1] & x <= d$support[2]]
+    hist(x, breaks = 60, freq = FALSE, col = pal[["petal"]], border = "white",
+         xlim = d$support, main = paste("Population:", d$name), xlab = "x")
+    curve(d$density(x), add = TRUE, lwd = 3, col = pal[["magenta"]], n = 400)
+  }
+}
+
+lattice_breaks <- function(xbar, n) {
+  lo <- min(xbar) - 0.5 / n
+  nbins <- round((max(xbar) - min(xbar)) * n) + 1
+  lo + (0:nbins) / n
+}
+
+plot_mean_hists <- function(r, ns = show_n) {
+  d <- r$d
+  op <- style_par(mfrow = c(1, length(ns)), mar = c(4.2, 3.2, 3, 1))
+  on.exit(par(op))
+  for (n in ns) {
+    xbar <- r$means[[as.character(n)]]
+    if (!d$finite_var) {
+      lim  <- quantile(xbar, c(0.01, 0.99))
+      xbar <- xbar[xbar >= lim[1] & xbar <= lim[2]]
+    }
+    br <- if (isTRUE(d$discrete)) lattice_breaks(xbar, n) else 50
+    hist(xbar, breaks = br, freq = FALSE, col = pal[["petal"]], border = pal[["hot"]],
+         main = paste0("n = ", n), xlab = expression(bar(x)), ylab = "")
+    if (d$finite_var) {
+      curve(dnorm(x, d$mu, d$sigma / sqrt(n)), add = TRUE, lwd = 3, col = pal[["grape"]], n = 400)
+    } else {
+      curve(dcauchy(x, 0, 1), add = TRUE, lwd = 3, col = pal[["grape"]], n = 400)
+    }
+  }
+}
+
+plot_mean_qq <- function(r, ns = show_n) {
+  op <- style_par(mfrow = c(1, length(ns)), mar = c(4.2, 4, 3, 1))
+  on.exit(par(op))
+  for (n in ns) {
+    xbar <- r$means[[as.character(n)]]
+    qqnorm(xbar, main = paste0("n = ", n), pch = 16, cex = 0.45,
+           col = adjustcolor(pal[["hot"]], alpha.f = 0.45))
+    qqline(xbar, col = pal[["grape"]], lwd = 2.5)
+  }
+}
+
+summary_table <- function(r) {
+  s <- r$summary
+  out <- data.frame(
+    n                = s$n,
+    `Simulated mean` = s$sim_mean,
+    `True mean`      = s$theory_mean,
+    `SD of the means` = s$sim_sd,
+    `Theory SE`      = s$theory_se,
+    `SE ratio`       = s$se_ratio,
+    `Lower tail`     = s$tail_lower,
+    `Upper tail`     = s$tail_upper,
+    `Shapiro p`      = fmt_p(s$sw_p),
+    `Normal enough?` = ifelse(s$normal_enough, "Yes", "No"),
+    check.names = FALSE
+  )
+  knitr::kable(out, digits = c(0, 3, 3, 3, 3, 3, 4, 4, 0, 0), align = "c")
+}
+
+population_table <- function(r) {
+  d <- r$d; x <- r$population
+  out <- data.frame(
+    Quantity   = c("Mean", "Standard deviation"),
+    Theory     = f(c(d$mu, d$sigma), 3),
+    `Simulated (10,000 draws)` = f(c(mean(x), sd(x)), 3),
+    check.names = FALSE
+  )
+  knitr::kable(out, align = "lcc")
+}
+```
+
+```{r}
+#| label: distributions
+#| include: false
+
+dists <- list(
+  normal = list(
+    name = "Standard Normal", rgen = function(k) rnorm(k, mean = 0, sd = 1),
+    mu = 0, sigma = 1, gamma1 = 0,
+    finite_var = TRUE, discrete = FALSE,
+    density = function(x) dnorm(x), support = c(-4, 4)
+  ),
+  die = list(
+    name = "Six-Sided Die", rgen = function(k) sample(1:6, k, replace = TRUE),
+    mu = 3.5, sigma = sqrt(35 / 12), gamma1 = 0,
+    finite_var = TRUE, discrete = TRUE,
+    pmf = data.frame(x = 1:6, p = rep(1 / 6, 6))
+  ),
+  exponential = list(
+    name = "Exponential (λ = 1)", rgen = function(k) rexp(k, rate = 1),
+    mu = 1, sigma = 1, gamma1 = 2,
+    finite_var = TRUE, discrete = FALSE,
+    density = function(x) dexp(x, rate = 1), support = c(0, 8)
+  ),
+  binomial = list(
+    name = "Binomial (5, 0.10)", rgen = function(k) rbinom(k, size = 5, prob = 0.10),
+    mu = 0.5, sigma = sqrt(0.45),
+    gamma1 = (1 - 2 * 0.10) / sqrt(0.45),          # (1 - 2p) / sqrt(np(1 - p))
+    finite_var = TRUE, discrete = TRUE,
+    pmf = data.frame(x = 0:5, p = dbinom(0:5, size = 5, prob = 0.10))
+  ),
+  cauchy = list(
+    name = "Cauchy (0, 1)", rgen = function(k) rcauchy(k, location = 0, scale = 1),
+    mu = NA_real_, sigma = NA_real_, gamma1 = NA_real_,
+    finite_var = FALSE, discrete = FALSE,
+    density = function(x) dcauchy(x, 0, 1), support = c(-10, 10)
+  )
+)
+```
+
+```{r}
+#| label: run
+#| include: false
+
+# Each population gets its own seed (student ID + 1, + 2, ...), so any one section
+# can be re-run on its own and give identical results.
+seeds   <- student_id_last4 + seq_along(dists)
+results <- Map(run_distribution, dists, seeds)
+
+# Exact tail probabilities at every n from 1 to 1,000 for the finite-variance populations,
+# and the smallest n from which both tails stay inside my window at every larger n.
+# (In theory the SE ratio is exactly 1 for any finite-variance population, so only the
+# tails can fail.)
+finite  <- names(dists)[sapply(dists, `[[`, "finite_var")]
+exact   <- lapply(setNames(finite, finite), exact_tails)
+exact_n <- sapply(exact, function(e) first_stable_n(e$n, tails_ok(e$lower, e$upper)))
+```
+
+# Executive Summary {#sec-summary}
+
+::: {.stat-grid}
+::: {.stat-card}
+[5]{.stat-num} [populations put to the test]{.stat-label}
+:::
+::: {.stat-card}
+[`r format(B, big.mark = ",")`]{.stat-num} [samples simulated for every setting]{.stat-label}
+:::
+::: {.stat-card}
+[`r length(n_grid)`]{.stat-num} [different sample sizes, from *n* = `r min(n_grid)` all the way to `r max(n_grid)`]{.stat-label}
+:::
+::: {.stat-card}
+[`r show_exact_n("exponential")`]{.stat-num} [*n* the exponential actually needs – not 30]{.stat-label}
+:::
+:::
+
+::: {.callout-note appearance="simple"}
+## The Short Answer – No, It's Not Always 30
+
+How quickly the sample mean becomes normal comes down largely to the **shape of the population** – first and foremost its skewness, and for lumpy discrete populations, how big the steps between the possible values of $\bar X$ are. And when a population has no finite variance, the CLT simply doesn't apply at all. Out of the 5 populations I tested, 30 was more than enough for the 2 symmetric ones, too small for the 2 skewed ones, and completely meaningless for the last one.
+:::
+
+**What I did.** For each of the 5 populations, I drew `r format(B, big.mark = ",")` independent samples at each of `r length(n_grid)` different sample sizes (*n* = `r paste(n_grid, collapse = ", ")`), took the mean of every sample, and then looked at how all of those means were distributed, which is the sampling distribution of $\bar X$. Before simulating, I made a guess (21) based off how low I thought n could go as well as it being a funny number I suppose. I then judged each sampling distribution against one fixed definition of ["approximately normal"](#sec-criterion): the simulated standard error had to land within 5% of $\sigma/\sqrt{n}$, and about 2.5% of the standardized means had to fall below −1.96, with about 2.5% above +1.96. I check each of these tails on its own, since otherwise skew can hide in the total. On top of that, the histograms and Q–Q plots act as a visual check on the same question. Lastly, since the exact distribution of $\bar X$ is actually known for the 4 finite-variance populations, I also calculated the exact tail probabilities at every *n* from 1 to `r format(max(n_grid), big.mark = ",")`, both to double check my simulation and to figure out where the thresholds fall in between my grid points.
+
+**Main findings.** The highlighted number for each population is the final answer I settled on – the sample size from which it stays approximately normal for good.
+
+- **Standard Normal:** Since the mean of normal data is exactly normal at every *n*, the criterion was met right from [*n* = `r show_exact_n("normal")`]{.final-n}. This is my control case, and it passing confirms that the simulation itself works the way it should.
+- **Six-sided die:** The die is symmetric with no long tails, so its 2 tails stay balanced and it converged quite quickly – the criterion was met from *n* = `r show_first_n("die")` on my grid, and the exact calculation shows it actually holds from [*n* = `r show_exact_n("die")`]{.final-n}. The only thing that had to wear off was its flat, boxy shape.
+- **Exponential (λ = 1):** The exponential's strong right skew ($\gamma_1 = 2$) keeps its sample means lopsided for a long time. At *n* = 30, only `r pct(at_n("exponential", 30, "tail_lower"))` of standardized means fell below −1.96 while `r pct(at_n("exponential", 30, "tail_upper"))` landed above +1.96, even though the 2 add up to almost exactly 5%. The criterion wasn't met until *n* = `r show_first_n("exponential")` on my grid, and the exact threshold turned out to be [*n* = `r show_exact_n("exponential")`]{.final-n}.
+- **Binomial (5, 0.10):** This one is both skewed ($\gamma_1 \approx$ `r f(dists$binomial$gamma1, 2)`) and very lumpy, with `r round(100 * dbinom(0, 5, 0.1))`% of observations being zero. At *n* = 30, its lower tail held only `r pct(at_n("binomial", 30, "tail_lower"))` of the means. On my grid it first met the criterion at *n* = `r show_first_n("binomial")`, but since $\bar X$ moves in steps of $1/n$, its tail rates jump around as *n* changes. As a result, the exact calculation shows that one tail is still outside my range at scattered sample sizes all the way up to *n* = `r show_exact_n("binomial") - 1`, so it's only reliably inside from [*n* = `r show_exact_n("binomial")`]{.final-n}.
+- **Cauchy (0, 1):** Here the CLT's finite-variance assumption fails, and the CLT simply doesn't apply, so the answer is [`r show_exact_n("cauchy")`]{.final-n}. The spread of $\bar X$ didn't shrink at all – its interquartile range was `r f(at_n("cauchy", 1, "iqr"))` at *n* = 1 and `r f(at_n("cauchy", 500, "iqr"))` at *n* = 500. In other words, averaging 500 Cauchy observations is no more precise than just taking one.
+
+**Theory predicted the results well.** For every finite-variance population, the simulated standard error matched $\sigma/\sqrt{n}$ within a few percent at every *n*, which tells me that formula is reliable for *spread* long before a distribution looks normal in *shape*. The simulated tail rates also line up with the exact probabilities (see [Double Checking With Exact Theory](#sec-exact)). Skewness explains most of the speed: the skewness of $\bar X$ is $\gamma_1/\sqrt{n}$, so the exponential's sample mean still has a skewness of `r f(2 / sqrt(30), 2)` at *n* = 30. If skewness were the whole story, the binomial, whose $\gamma_1$ is `r round(100 * dists$binomial$gamma1 / 2)`% of the exponential's, would only need about $(`r f(dists$binomial$gamma1, 2)`/2)^2 \approx$ `r round(100 * (dists$binomial$gamma1 / 2)^2)`% as many observations, somewhere around *n* = `r round(exact_n[["exponential"]] * (dists$binomial$gamma1 / 2)^2)`. The fact that it needed more than that is largely due to its lumpiness, which adds an error of its own on top of the skew.
+
+## Final Summary Table {#sec-final-table}
+
+```{r}
+#| label: final-table
+#| code-summary: "Show the code for the final table"
+#| classes: final-table
+
+final_table <- do.call(rbind, lapply(names(results), function(k) {
+  r <- results[[k]]; d <- r$d
+  verdict <- switch(k,
+    normal      = "Exactly normal at every n (control case)",
+    die         = "Rapid convergence – symmetric, with no long tails",
+    exponential = "Slow convergence – strong right skew",
+    binomial    = "Slow, irregular convergence – skewed and discrete",
+    cauchy      = "CLT does not apply – no finite mean or variance"
+  )
+  ok30 <- at_n(k, 30, "normal_enough")
+  data.frame(
+    Population                  = d$name,
+    `Independent & identical?`  = "Yes",
+    `Finite variance?`          = ifelse(d$finite_var, "Yes", "No"),
+    `μ`                         = f(d$mu),
+    `σ`                         = f(d$sigma),
+    `Observed n (grid)`         = ifelse(is.na(r$first_n), "never", r$first_n),
+    `Exact n`                   = as.character(show_exact_n(k)),
+    `SE ratio @ n=30`           = f(at_n(k, 30, "se_ratio"), 3),
+    `Lower / upper tail @ n=30` = if (d$finite_var) paste(f(at_n(k, 30, "tail_lower"), 3), "/",
+                                                          f(at_n(k, 30, "tail_upper"), 3)) else "undefined",
+    `Normal enough @ n=30?`     = ifelse(ok30, "Yes", "No"),
+    Verdict                     = verdict,
+    check.names = FALSE
+  )
+}))
+knitr::kable(final_table, align = "lcccccccccl", row.names = FALSE)
+```
+
+The highlighted *Exact n* column is my final answer for each population. *Observed n (grid)* is the smallest *n* in my simulation grid where the SE ratio **and both tail rates** were inside their windows, and stayed inside for every larger grid *n*. *Exact n* applies that same tail check to exact probabilities at **every** *n* from 1 to `r format(max(n_grid), big.mark = ",")`, so it has no simulation noise and no gaps between grid points. In theory the SE ratio is exactly 1 for any population with finite variance, so only the tails can fail. For a smooth population, the grid answer is just the next grid point at or above the exact one. The lumpy binomial is the exception, since its grid answer is *below* the exact one: grid points 50 and 100 happen to pass, but some of the sample sizes in between don't. *SE ratio* is the simulated standard deviation of $\bar X$ divided by $\sigma/\sqrt{n}$ (1.000 = perfect agreement), and the *tail rates* are the shares of standardized sample means below −1.96 and above +1.96, each of which should be about 0.025.
+
+# Study Design {#sec-design}
+
+## The Big Question
+
+The Central Limit Theorem says that if $X_1, \dots, X_n$ are **independent**, **identically distributed**, and have **finite variance** $\sigma^2$, then the standardized sample mean
+
+$$
+Z_n = \frac{\bar X - \mu}{\sigma/\sqrt{n}}
+$$
+
+approaches a standard normal distribution as $n \to \infty$. The problem with this however, is that the theorem says nothing about *how large* $n$ actually has to be. The most common rule of thumb people go by is $n \ge 30$, and this project puts that rule to the test by simulation: which populations have a sample mean that looks normal at $n = 30$, which ones need more, and for which ones does the theorem not apply at all?
+
+## Sample Size v. Number of Simulations
+
+There are 2 different numbers driving this study, and it's important not to mix them up, since they play very different roles:
+
+- **$n$ is the sample size**: the number of observations that get averaged together to produce one sample mean. I study $n \in \{`r paste(n_grid, collapse = ", ")`\}$.
+- **$B$ = `r format(B, big.mark = ",")` is the number of simulations**: how many independent samples of size $n$ I generate. Each one produces a single value of $\bar X$, and all $B$ of those values together make up the simulated sampling distribution.
+
+For example, at $n = 30$ I generate `r format(B, big.mark = ",")` samples of 30 observations each. That gives me `r format(B, big.mark = ",")` sample means, *not* a sample of size `r format(B, big.mark = ",")`. Increasing $B$ simply makes my *picture* of the sampling distribution sharper, while increasing $n$ changes the sampling distribution itself.
+
+## The 5 Populations
+
+| Population | R generator | Key feature | Parameters |
+|------------|-------------|-------------|------------|
+| Standard Normal | `rnorm()` | Normal population (control case) | $\mu = 0$, $\sigma = 1$ |
+| Six-Sided Die | `sample()` | Discrete uniform, symmetric, flat | Values 1–6, equally likely |
+| Exponential | `rexp()` | Strong right skew | $\lambda = 1$ (mean 1) |
+| Binomial Small | `rbinom()` | Highly discrete and skewed | $n = 5$, $p = 0.10$ |
+| Cauchy | `rcauchy()` | Extremely heavy tails, no mean | Location 0, scale 1 |
+
+All 5 populations are simulated with R's random number generators, so no outside data is needed. Since each population is fully specified, its true mean and standard deviation are known exactly, which means every simulated result can be checked against theory. For the 4 finite-variance populations, the exact distribution of $\bar X$ is known as well (normal, a scaled Gamma, a scaled Binomial, and the sum of dice), which lets me check the simulated tail rates against exact probabilities too. Symmetry, or the lack of it, shows up in 2 places: visually, in the histograms and Q–Q plots, and numerically, as unequal lower and upper tail rates.
+
+## What Counts as "Approximately Normal" {#sec-criterion}
+
+There's no single cutoff that everyone agrees on, so I chose one definition and applied it to every population. A simulated sampling distribution of $\bar X$ counts as **approximately normal** only if **all 3** of these quantitative checks hold, with the histograms and Q–Q plots acting as a visual check on the same question.
+
+| Check | Rule | Why it matters |
+|-------|------|----------------|
+| Spread | SE ratio in $[`r crit$se_lo`, `r crit$se_hi`]$ | The simulated SD of $\bar X$ has to agree with $\sigma/\sqrt{n}$ within 5%, or else the usual standard error formula would be misleading. |
+| Lower tail | Share of $Z_n < -1.96$ in $[`r crit$tail_lo`, `r crit$tail_hi`]$ | This should be near 2.5%, since it's how often a 95% confidence interval misses on one side, as well as the error rate of a one-sided test at the 2.5% level. Anything between 1.75% and 3.25% is "good enough." |
+| Upper tail | Share of $Z_n > 1.96$ in $[`r crit$tail_lo`, `r crit$tail_hi`]$ | The same thing on the other side. Together, the 2 checks keep a 95% interval's coverage between 93.5% and 96.5%, and they also make sure the misses are roughly balanced. |
+
+**Why each tail is checked separately.** The first version of my rule counted both tails together, meaning the share of $\lvert Z_n\rvert > 1.96$ just had to be between 3.5% and 6.5%. The problem with that rule is that it can't see skew at all. For the exponential population, the exact two-sided share is between `r pct(min(exact$exponential$lower + exact$exponential$upper))` and `r pct(max(exact$exponential$lower + exact$exponential$upper))` at **every** *n*, even at *n* = 1, where $\bar X$ is just a single exponential draw. This is because the upper tail is overfull while the lower tail is nearly empty, and the 2 cancel each other out. A skewed $\bar X$ will always overfill one tail and starve the other, so checking each tail on its own is what actually lets the rule detect skew. It's also much closer to how intervals and one-sided tests get used in practice.
+
+**Shape is also checked by eye.** For each population and sample size, I look at the **histograms** (is it bell-shaped, or does it still lean to one side?) and the **normal Q–Q plots** made with `qqnorm()` and `qqline()` (are the points on the line, especially out in the tails?). I don't compute a sample skewness for the pass/fail rule, since unequal tail rates are the sign of skew that matters most for inference. Each population's theoretical skewness $\gamma_1$ is only there as background, along with the textbook fact that the skewness of $\bar X$ is $\gamma_1/\sqrt{n}$, which I use to explain the results rather than to decide them.
+
+**Why I did not use kurtosis.** Kurtosis often gets suggested as a measure of how heavy the tails are, but I left it out of my criterion for 2 reasons. First, the tail checks already measure what matters in practice, which is whether the right share of sample means lands below −1.96 and above +1.96. Second, sample kurtosis is driven by a handful of the most extreme values, so it's quite noisy and can swing a whole lot from one seed to the next. The histograms and Q–Q plots I already use give me a visual check on the full shape of the tails anyway, including the die's flat, boxy population.
+
+I do report the **Shapiro–Wilk** p-value (on the first 5,000 means, the test's maximum), but I deliberately **don't** use it as part of my criterion. With 5,000 values, the test flags departures that are far too small to matter – for example, it rejects the die at *n* = 30 (`r p_eq(at_n("die", 30, "sw_p"))`) even though the exact share of die means in each tail there is `r pct(ex_at("die", 30, "lower"), 2)`, which is almost exactly 2.5%. In principle, a discrete variable is never exactly normal, so with enough values the test would end up rejecting every single one of them. With 5,000 values though, it stops noticing the die's steps from *n* = `r first_stable_n(results$die$summary$n, results$die$summary$sw_p >= 0.05)` and the binomial's from *n* = `r first_stable_n(results$binomial$summary$n, results$binomial$summary$sw_p >= 0.05)`. After all, the test answers "is this *exactly* normal?" when the more useful question is "is normal *close enough*?"
+
+## The CLT's Assumptions
+
+All 5 populations are sampled **independently** (each draw is a fresh random number) and are **identically distributed** (every observation comes from the same population). The only assumption that changes between them is **finite variance**:
+
+- The normal, die, exponential, and binomial populations all have finite variance, so the CLT guarantees they'll converge eventually – the only real question is how fast.
+- The Cauchy distribution, on the other hand, has *no finite mean or variance*. The CLT doesn't apply here, and $\sigma/\sqrt{n}$ can't even be computed, but I simulate it anyway to see exactly what goes wrong.
+
+## My Predictions Going In {#sec-predictions}
+
+Going into this project, I already had a decent bit of knowledge about the CLT in hand, so before running any simulations I expected the speed of convergence to track each population's known shape. Symmetric, light-tailed populations should look normal almost immediately, while visibly skewed or heavy-tailed populations should take much longer, since skewness is known to fade away only slowly as *n* grows (proportional to $1/\sqrt{n}$, not $1/n$). These were my predictions, made before looking at any of the simulations:
+
+1. **Normal:** I expect this one to pass at every *n*, since $\bar X$ is already exactly normal.
+2. **Die:** Since it's perfectly symmetric, I think it'll only fail at *n* = 1, simply because a single roll can never land more than 1.96 standard deviations from 3.5 (so the tail rate is 0). My guess is that it'll pass somewhere around *n* ≈ 2–10, with its discreteness causing some small wobbles in the tail rate along the way.
+3. **Binomial (5, 0.10):** This one is only mildly skewed, so I expect it to land somewhere near the classic "30," with its discreteness staying visible in the Q–Q plots for longer than its shape would suggest.
+4. **Exponential:** With its strong right skew, I really don't think *n* = 30 will be enough, and I expect its histograms and Q–Q plots to still show a visible lean well past *n* = 30.
+5. **Cauchy:** I don't expect this one to ever pass, and I think its sample means won't get any less spread out as *n* grows.
+
+## Monte Carlo Precision
+
+Since $B$ is finite, every simulated statistic has some random error of its own. With $B$ = `r format(B, big.mark = ",")`, the approximate standard errors (for a truly normal $\bar X$) are:
+
+- each simulated tail rate: $\sqrt{0.025 \times 0.975 / B} \approx$ `r f(sqrt(0.025 * 0.975 / B), 4)`
+- SE ratio: about $1/\sqrt{2B} \approx$ `r f(1 / sqrt(2 * B), 3)`
+
+These are small next to my windows. Each tail window extends 0.0075 on either side of 0.025 (about `r f(0.0075 / sqrt(0.025 * 0.975 / B), 1)` standard errors), and the SE-ratio window extends 0.05 on either side of 1. As a result, most passes and fails reflect the population itself rather than simulation noise. The one exception is a grid point whose true tail probability sits within about one standard error of a cutoff, where a different seed could flip the result. The exact calculation tells me which grid points those are (marked \* in the [exact table](#sec-exact)) – for example the die at *n* = 5, where the exact share in each tail is `r f(ex_at("die", 5, "lower"), 4)` against a cutoff of `r crit$tail_hi`. The exact *n* in the final table, however, doesn't depend on the seed at all.
+
+# Simulation Code {#sec-code}
+
+Every population runs through the same set of functions. The simulations are run once at the very start of the document so that the executive summary can report the results, and the code is shown here for reference.
+
+```{r}
+#| label: show-params
+#| ref.label: "params"
+#| eval: false
+#| code-summary: "My parameters, seed, and criterion"
+```
+
+```{r}
+#| label: show-functions
+#| ref.label: "functions"
+#| eval: false
+#| code-summary: "The functions I reuse for simulating, summarizing, and plotting"
+```
+
+```{r}
+#| label: show-distributions
+#| ref.label: "distributions"
+#| eval: false
+#| code-summary: "How each population is defined, along with its theoretical values"
+```
+
+```{r}
+#| label: show-run
+#| ref.label: "run"
+#| eval: false
+#| code-summary: "Running every simulation"
+```
+
+The core idea of the whole simulation lives in `simulate_means()`. It draws all $B \times n$ observations at once, arranges them into a matrix with one simulated sample per row, and then takes the `rowMeans()`. This gives me $B$ sample means of size $n$ without a slow loop, and it keeps $n$ (columns) and $B$ (rows) clearly separate.
+
+The exact tail probabilities come from `exact_tails()`, which uses the known distribution of the sum $S = n\bar X$: `pgamma()` for the exponential, `pbinom()` for the binomial, and for the die, the distribution of the sum built up one die at a time.
+
+**How I checked the code.** The normal population works as a built-in test, since $\bar X$ has to have a mean of 0, a standard deviation of exactly $1/\sqrt{n}$, a symmetric bell-shaped histogram, and tail rates of about 0.025 on each side at every *n*. On top of that, the population tables in each section compare 10,000 raw draws to the theoretical mean and standard deviation, which confirms that each generator and its parameters are set up correctly. Lastly, every simulated tail rate for the 4 finite-variance populations gets compared with its exact value in [Double Checking With Exact Theory](#sec-exact).
+
+# Standard Normal – The Control Case {#sec-normal}
+
+[Control Case]{.tag .tag-control}
+
+## Population and Theory
+
+```{r}
+#| label: normal-pop
+#| fig-width: 6
+#| fig-height: 3.6
+#| fig-cap: "10,000 draws from N(0, 1), with the true density drawn on top."
+plot_population(results$normal)
+```
+
+```{r}
+#| label: normal-pop-table
+population_table(results$normal)
+```
+
+A standard normal population is symmetric and bell-shaped, with $\mu = 0$ and $\sigma = 1$. It's the one case where the answer is known exactly for every *n*, since a mean of independent normals is itself normal: $\bar X \sim N(0, 1/n)$. This means $\text{SE}(\bar X) = 1/\sqrt{n}$ and the skewness is 0 at every sample size, so any departure in the simulation would point to a bug in my code, not to the CLT.
+
+## Sampling Distributions
+
+```{r}
+#| label: normal-hist
+#| fig-cap: "The simulated sampling distributions of the mean, with the CLT's normal curve N(μ, σ²/n) laid over each one."
+plot_mean_hists(results$normal)
+```
+
+```{r}
+#| label: normal-qq
+#| fig-cap: "Normal Q–Q plots of the simulated sample means, which sit right on the line at every n."
+plot_mean_qq(results$normal)
+```
+
+```{r}
+#| label: normal-table
+summary_table(results$normal)
+```
+
+## What I Found
+
+- **How quickly is it normal?** Immediately – the criterion was met right from *n* = `r show_first_n("normal")`. Every histogram matches the normal curve, and every Q–Q plot lies right on the line.
+- **Mean.** The simulated mean of $\bar X$ is within simulation noise of 0 at every *n* (for example, `r f(at_n("normal", 30, "sim_mean"), 4)` at *n* = 30).
+- **Standard error.** The SE ratio ranged from `r f(min(results$normal$summary$se_ratio), 3)` to `r f(max(results$normal$summary$se_ratio), 3)`, which confirms $\sigma/\sqrt{n}$.
+- **Evidence.** The histograms match the normal curve almost exactly, the Q–Q plots lie right on the line at every *n* with no visible departure from symmetry, and both tail rates stay near 0.025.
+- **Limitations and surprises.** Even here, a Shapiro–Wilk p-value will occasionally fall below 0.05 by pure chance (about 1 time in 20), which is a good reminder that a single test result is pretty weak evidence on its own. Above all though, this case is here to validate the code.
+
+# Six-Sided Die – Rapid Convergence {#sec-die}
+
+[Rapid Convergence]{.tag .tag-fast}
+
+## Population and Theory
+
+```{r}
+#| label: die-pop
+#| fig-width: 6
+#| fig-height: 3.6
+#| fig-cap: "The die population – 6 values, all equally likely."
+plot_population(results$die)
+```
+
+```{r}
+#| label: die-pop-table
+population_table(results$die)
+```
+
+A fair die takes the values 1 to 6 with probability 1/6 each, which makes it **discrete**, **perfectly symmetric**, and **flat** rather than bell-shaped:
+
+$$
+\mu = 3.5, \qquad \sigma^2 = \frac{6^2 - 1}{12} = \frac{35}{12}, \qquad \sigma \approx `r f(sqrt(35/12), 3)`, \qquad \gamma_1 = 0.
+$$
+
+Since the population is already symmetric, $\bar X$ is symmetric at every *n*, so what has to wear off instead is the boxy shape. A single roll has no tails at all (it can never go below 1 or above 6), so the sample mean needs to be averaged over a few rolls before values far from 3.5 start showing up in normal proportions.
+
+## Sampling Distributions
+
+```{r}
+#| label: die-hist
+#| fig-cap: "Sampling distributions of the mean roll, with the bars lined up on the 1/n grid of possible means."
+plot_mean_hists(results$die)
+```
+
+```{r}
+#| label: die-qq
+#| fig-cap: "Normal Q–Q plots of the simulated mean roll. At n = 1 the ends flatten out, since a single roll has tails that are too light."
+plot_mean_qq(results$die)
+```
+
+```{r}
+#| label: die-table
+summary_table(results$die)
+```
+
+## What I Found
+
+- **How quickly is it normal?** Quite fast. The criterion was met from *n* = `r show_first_n("die")` on my grid, which is in line with my prediction of about 2–10, and the exact calculation shows it holds at every *n* from `r show_exact_n("die")` on. At *n* = 2, the average of 2 dice is already triangular, with exactly 1/36 ≈ `r pct(ex_at("die", 2, "lower"))` of averages in each tail, and by *n* = 5 the histogram is clearly bell-shaped.
+- **Mean.** The simulated mean of $\bar X$ is within simulation noise of 3.5 at every *n* (`r f(at_n("die", 30, "sim_mean"), 3)` at *n* = 30).
+- **Standard error.** The SE ratio stayed between `r f(min(results$die$summary$se_ratio), 3)` and `r f(max(results$die$summary$se_ratio), 3)`, so $\sigma/\sqrt{n}$ works even at *n* = 1.
+- **Evidence.** The histograms stay symmetric at every *n*, which is to be expected for a population that's already symmetric. Its 2 exact tail probabilities are identical at every *n*, and the simulated ones only differ by noise. The Q–Q plot at *n* = 1 flattens out at both ends instead of following the line, which is the signature of a distribution with tails that are too light. By *n* = 5 the points follow the line, with horizontal steps since $\bar X$ can only take values in steps of $1/n$.
+- **Limitations and surprises.** At *n* = 1 both tail rates are exactly 0, simply because a single roll can never fall more than 1.96 standard deviations from 3.5. Discreteness also makes the tail rates jump around at small *n*, since they depend on exactly which sums fall just inside or outside ±1.96. The exact share in each tail is `r pct(ex_at("die", 3, "lower"), 2)` at *n* = 3 but `r pct(ex_at("die", 5, "lower"), 2)` at *n* = 5, both of which sit close to the edges of my 1.75%–3.25% range, so whether those 2 grid points pass can depend on the seed. This is a lattice effect, not a failure of the CLT.
+
+# Exponential – Slow Convergence Under Skew {#sec-exponential}
+
+[Slow Convergence]{.tag .tag-slow}
+
+## Population and Theory
+
+```{r}
+#| label: exp-pop
+#| fig-width: 6
+#| fig-height: 3.6
+#| fig-cap: "10,000 draws from an Exponential(1), with the true density drawn on top."
+plot_population(results$exponential)
+```
+
+```{r}
+#| label: exp-pop-table
+population_table(results$exponential)
+```
+
+The exponential distribution with rate $\lambda = 1$ has its peak at 0 and a long tail stretching out to the right:
+
+$$
+\mu = \frac{1}{\lambda} = 1, \qquad \sigma = \frac{1}{\lambda} = 1, \qquad \gamma_1 = 2.
+$$
+
+This is a skewed population with finite variance, so the CLT does apply, but it should be slow. In fact, the exact distribution of $\bar X$ is known here – the sum of $n$ exponentials is Gamma($n$, 1), and Gamma distributions stay right-skewed for a long time as $n$ grows. The skewness of $\bar X$ is $2/\sqrt{n}$, which is still `r f(2 / sqrt(30), 2)` at *n* = 30, and the plots at *n* = 30 confirm the right skew is still visible by eye, most clearly in the Q–Q plot.
+
+## Sampling Distributions
+
+```{r}
+#| label: exp-hist
+#| fig-cap: "Sampling distributions of the mean for the Exponential(1). The slight lean to the right is still there at n = 30."
+plot_mean_hists(results$exponential)
+```
+
+```{r}
+#| label: exp-qq
+#| fig-cap: "Normal Q–Q plots. The upward bend at the right end means the right tail is heavier than a normal one would be."
+plot_mean_qq(results$exponential)
+```
+
+```{r}
+#| label: exp-table
+summary_table(results$exponential)
+```
+
+## What I Found
+
+- **How quickly is it normal?** Slowly. On my grid, the criterion wasn't met until *n* = `r show_first_n("exponential")`, well past *n* = 30, and the exact calculation puts the threshold at *n* = `r show_exact_n("exponential")`. Both of these line up with the expectation that strong right skew takes a long time to fade.
+- **Mean.** Unbiased at every *n*: `r f(at_n("exponential", 30, "sim_mean"), 3)` at *n* = 30, versus the true value of 1.
+- **Standard error.** The SE ratio stayed between `r f(min(results$exponential$summary$se_ratio), 3)` and `r f(max(results$exponential$summary$se_ratio), 3)`. The *spread* of $\bar X$ is right even when its *shape* isn't, since $\text{Var}(\bar X) = \sigma^2/n$ holds exactly for any population with finite variance, normal or not.
+- **Evidence.** The Q–Q plots bend upward at the right end and flatten out at the left, which is the signature of right skew. That bend is still clearly visible at *n* = 30, and much smaller, though not gone, at *n* = 100. The tail rates tell the same story in numbers: at *n* = 30 the lower tail held `r pct(at_n("exponential", 30, "tail_lower"), 2)` of the standardized means and the upper tail held `r pct(at_n("exponential", 30, "tail_upper"), 2)`, where a normal distribution would put 2.5% in each.
+- **Limitations and surprises.** At *n* = 30, the 2 tails add up to `r pct(at_n("exponential", 30, "tail_lower") + at_n("exponential", 30, "tail_upper"), 2)`, which is almost exactly what a normal distribution gives, even though each tail on its own is quite far off. Skew pushes *extra* probability into the right tail and *takes* it away from the left, and a two-sided count lets the 2 cancel out. A rule that only counted both tails together would call this normal, and as I showed in [my criterion](#sec-criterion), it would pass the exponential at every *n*, even *n* = 1. This is exactly why I check the 2 tails separately. The imbalance matters in practice too: a one-sided z-test at the 2.5% level on the upper side would reject a true null hypothesis `r pct(at_n("exponential", 30, "tail_upper"))` of the time at *n* = 30, which is about `r round(100 * (at_n("exponential", 30, "tail_upper") / 0.025 - 1))`% more often than it should.
+
+# Binomial (5, 0.10) – Skewed and Discrete {#sec-binomial}
+
+[Slow, Irregular Convergence]{.tag .tag-moderate}
+
+## Population and Theory
+
+```{r}
+#| label: binom-pop
+#| fig-width: 6
+#| fig-height: 3.6
+#| fig-cap: "The Binomial(5, 0.10) population, with most of the probability sitting right at 0."
+plot_population(results$binomial)
+```
+
+```{r}
+#| label: binom-pop-table
+population_table(results$binomial)
+```
+
+Each observation counts the number of successes in 5 trials, with a success probability of 0.10:
+
+$$
+\mu = 5(0.10) = 0.5, \qquad \sigma^2 = 5(0.10)(0.90) = 0.45, \qquad \sigma \approx `r f(sqrt(0.45), 3)`, \qquad \gamma_1 = \frac{1 - 2p}{\sqrt{np(1-p)}} \approx `r f(dists$binomial$gamma1, 3)`.
+$$
+
+About `r round(100 * dbinom(0, 5, 0.1))`% of observations are 0 and only a handful are above 2, so the population is both **skewed** ($\gamma_1 \approx$ `r f(dists$binomial$gamma1, 2)`, more than half of the exponential's 2) and **highly discrete**. The sum of $n$ observations is exactly Binomial($5n$, 0.10), so $\bar X$ can only take the values $0, \tfrac{1}{n}, \tfrac{2}{n}, \dots$. This makes it a natural link to the familiar rule that the normal approximation to a binomial works once the expected count $5n \times 0.10 \ge 10$, which happens at *n* = 20.
+
+## Sampling Distributions
+
+```{r}
+#| label: binom-hist
+#| fig-cap: "Sampling distributions of the mean, with the bars lined up on the 1/n grid of possible values."
+plot_mean_hists(results$binomial)
+```
+
+```{r}
+#| label: binom-qq
+#| fig-cap: "Normal Q–Q plots. The horizontal steps are there because the sample mean is discrete."
+plot_mean_qq(results$binomial)
+```
+
+```{r}
+#| label: binom-table
+summary_table(results$binomial)
+```
+
+## What I Found
+
+- **How quickly is it normal?** Slowly, and quite unevenly. At *n* = 30, the lower tail held only `r pct(at_n("binomial", 30, "tail_lower"), 2)` of the standardized means (exact: `r pct(ex_at("binomial", 30, "lower"), 2)`), so 30 isn't enough. On my grid the criterion was first met at *n* = `r show_first_n("binomial")`, but that's partly just luck of the grid. By the exact calculation, `r length(exact_fails("binomial", show_first_n("binomial") + 1, 99))` of the sample sizes between `r show_first_n("binomial") + 1` and 99 still fail, the last one being *n* = `r max(exact_fails("binomial", show_first_n("binomial") + 1, 99))`, so the binomial is only reliably inside my range from *n* = `r show_exact_n("binomial")` on. The familiar "expected count ≥ 10" rule (*n* ≥ 20 here) isn't enough by this standard either: at *n* = 21, the exact lower tail is `r pct(ex_at("binomial", 21, "lower"), 2)`.
+- **Mean.** Unbiased: `r f(at_n("binomial", 30, "sim_mean"), 3)` at *n* = 30 versus 0.5.
+- **Standard error.** The SE ratio stayed between `r f(min(results$binomial$summary$se_ratio), 3)` and `r f(max(results$binomial$summary$se_ratio), 3)`.
+- **Evidence.** The histograms become bell-shaped by *n* = 30 with a slight right lean, and the Q–Q plot at *n* = 30 still bends away from the line at both ends – the same right-skew signature as the exponential's. The Q–Q plots also keep their staircase pattern even at *n* = 100. The steps get smaller, but they never disappear, since the possible values of $\bar X$ are always spaced $1/n$ apart.
+- **Limitations and surprises.** Discreteness makes the tail rates follow a sawtooth pattern instead of settling down smoothly. The exact lower tail is `r pct(ex_at("binomial", 21, "lower"), 2)` at *n* = 21, `r pct(ex_at("binomial", 30, "lower"), 2)` at *n* = 30 and `r pct(ex_at("binomial", 50, "lower"), 2)` at *n* = 50, so it actually goes *down* between 21 and 30. This is because each tail depends on whether a possible value of $\bar X$ falls just inside or just outside the cutoff. Skewness alone doesn't explain how long this takes either. If it did, matching the exponential's skewness at its exact threshold would only take the binomial about *n* = `r round(exact_n[["exponential"]] * (dists$binomial$gamma1 / 2)^2)`. However, relative to its spread, the binomial's steps are about `r f(sqrt(35 / 12) / sqrt(0.45), 1)` times coarser than the die's at the same *n*, so its sawtooth stays large for much longer. Shapiro–Wilk rejects normality at every grid *n* up to `r max(results$binomial$summary$n[results$binomial$summary$sw_p < 0.05])`, but not at *n* = 500 (`r p_eq(at_n("binomial", 500, "sw_p"))`) or 1,000 (`r p_eq(at_n("binomial", 1000, "sw_p"))`), since with 5,000 values it can no longer detect the steps once they get small. A discrete variable is never exactly normal, so the test is answering the wrong question here, which is why I didn't use it as my criterion.
+
+# Cauchy (0, 1) – Where the CLT Does Not Apply {#sec-cauchy}
+
+[CLT Does Not Apply]{.tag .tag-fails}
+
+## Population and Theory
+
+```{r}
+#| label: cauchy-pop
+#| fig-width: 6
+#| fig-height: 3.6
+#| fig-cap: "Cauchy(0, 1) draws between −10 and 10, with the true density drawn on top. About 6% of the draws actually land outside this window."
+plot_population(results$cauchy)
+```
+
+```{r}
+#| label: cauchy-pop-table
+population_table(results$cauchy)
+```
+
+The Cauchy density, $f(x) = \dfrac{1}{\pi(1 + x^2)}$, looks like a bell curve with a sharper peak, but its tails are so heavy that $E|X| = \infty$. As a result, the **mean and variance do not exist**, which means:
+
+- the CLT's finite-variance assumption fails;
+- $\text{SE}(\bar X) = \sigma/\sqrt{n}$ can't be computed, since there is no $\sigma$; and
+- the sample mean and standard deviation in the table above aren't really estimating anything. Run the code with another seed, and they change wildly.
+
+Theory gives a pretty striking result here: the mean of $n$ independent Cauchy(0, 1) variables is **again exactly Cauchy(0, 1)**, for every *n*. In other words, averaging does absolutely nothing.
+
+## Sampling Distributions
+
+```{r}
+#| label: cauchy-hist
+#| fig-cap: "Sampling distributions of the mean (only the middle 98% shown). The curve on top is the Cauchy(0, 1) density, not a normal curve, and it fits at every n."
+plot_mean_hists(results$cauchy)
+```
+
+```{r}
+#| label: cauchy-qq
+#| fig-cap: "Normal Q–Q plots, where a handful of enormous values dominate at every n."
+plot_mean_qq(results$cauchy)
+```
+
+The usual summary table doesn't make much sense here, since there's no theoretical mean or SE to compare against. Instead, I summarize the spread with quantities that *do* exist for a Cauchy distribution: the median and interquartile range (IQR). For Cauchy(0, 1), the quartiles are ±1, so the IQR is exactly 2.
+
+```{r}
+#| label: cauchy-table
+cs <- results$cauchy$summary
+cauchy_out <- data.frame(
+  n                 = cs$n,
+  `Median of means` = sapply(results$cauchy$means, median),
+  `IQR of means`    = cs$iqr,
+  `IQR theory`      = 2,
+  `SD of the means` = cs$sim_sd,
+  `Largest |mean|`  = sapply(results$cauchy$means, function(x) max(abs(x))),
+  `Normal enough?`  = ifelse(cs$normal_enough, "Yes", "No"),
+  check.names = FALSE
+)
+knitr::kable(cauchy_out, digits = 2, align = "c", row.names = FALSE)
+
+# For comparison: how much the IQR of x-bar shrank from n = 1 to n = 500 for the
+# finite-variance populations (used in the interpretation below)
+iqr_shrink <- sapply(finite, function(k) at_n(k, 1, "iqr") / at_n(k, 500, "iqr"))
+```
+
+## What Does Work – The Sample Median
+
+While the mean fails, another estimator of the center actually works. The sample median of Cauchy data is approximately normal for large *n*, with a standard error of $\pi / (2\sqrt{n})$, since the median depends on the middle of the data rather than on its extreme values.
+
+```{r}
+#| label: cauchy-median
+#| code-summary: "Show the code for the median comparison"
+set.seed(student_id_last4 + 100)
+median_n <- c(10, 30, 100)
+cauchy_medians <- lapply(median_n, function(n) {
+  draws <- matrix(rcauchy(B * n), nrow = B, ncol = n)
+  apply(draws, 1, median)
+})
+median_out <- data.frame(
+  n                = median_n,
+  `SD of medians`  = sapply(cauchy_medians, sd),
+  `Theory π/(2√n)` = pi / (2 * sqrt(median_n)),
+  `IQR of medians` = sapply(cauchy_medians, IQR),
+  `IQR of means`   = sapply(median_n, function(n) at_n("cauchy", n, "iqr")),
+  check.names = FALSE
+)
+knitr::kable(median_out, digits = 3, align = "c", row.names = FALSE)
+```
+
+## What I Found
+
+- **How quickly is it normal?** Never. The criterion wasn't met at any *n*, and no larger *n* would help either, since the sampling distribution of $\bar X$ is the same Cauchy(0, 1) at every sample size.
+- **Mean.** There's no theoretical mean to compare with. The *median* of the simulated means stays near 0 since the distribution is centered at 0, but individual sample means can be enormous (the largest absolute mean at *n* = 500 was `r f(max(abs(results$cauchy$means[["500"]])), 0)`).
+- **Standard error.** $\sigma/\sqrt{n}$ doesn't exist, and the simulated SD of the means is unstable and doesn't shrink. More telling is that the IQR of $\bar X$ was `r f(at_n("cauchy", 1, "iqr"))` at *n* = 1 and `r f(at_n("cauchy", 500, "iqr"))` at *n* = 500, both essentially equal to the theoretical value of 2. Over the same range, the IQR of every finite-variance population shrank by a factor of between `r round(min(iqr_shrink))` and `r round(max(iqr_shrink))`, which is close to $\sqrt{500} \approx 22$ (the exact factor also depends on how the shape changes between *n* = 1 and *n* = 500).
+- **Evidence.** The histograms look the same at every *n* and match the Cauchy density, not a normal curve. The Q–Q plots have the extreme S-shape of a very heavy-tailed distribution at every *n*, and never settle down as *n* grows.
+- **Limitations and surprises.** The biggest surprise here is that more data does *not* help the mean at all. Each new observation has a real chance of being so extreme that it outweighs everything that came before it. The sample median, on the other hand, converges quite nicely, which shows that the problem lies in averaging heavy-tailed data, not in estimating the center.
+
+# Comparing the Populations {#sec-compare}
+
+```{r}
+#| label: compare-plots
+#| fig-height: 4
+#| fig-cap: "Left and middle: the share of standardized means below −1.96 and above +1.96, with my acceptable range (1.75% to 3.25%) shaded in and 2.5% dashed. Right: the IQR of the sample mean on log–log axes, where the finite-variance populations fall with a slope of about −1/2 while the Cauchy stays flat."
+
+op <- style_par(mfrow = c(1, 3), mar = c(4.5, 4.5, 3, 1))
+
+# Panels 1-2: lower and upper tail rates, each checked against the same window
+tail_panel <- function(col, main) {
+  plot(NA, xlim = range(n_grid), ylim = c(0, 0.09), log = "x",
+       xlab = "Sample size n (log scale)", ylab = "Share of standardized means", main = main)
+  rect(0.5, crit$tail_lo, max(n_grid) * 2, crit$tail_hi, col = pal[["blush"]], border = NA)
+  abline(h = 0.025, col = "grey75", lty = 2)
+  for (k in finite) {
+    s <- results[[k]]$summary
+    points(s$n, s[[col]], pch = 19, cex = 1.1, col = dist_cols[k], type = "b", lwd = 2)
+  }
+}
+tail_panel("tail_lower", "Lower tail (Z < -1.96)")
+legend("topright", legend = sapply(dists[finite], `[[`, "name"),
+       col = dist_cols[finite], pch = 19, bty = "n", cex = 0.85)
+tail_panel("tail_upper", "Upper tail (Z > +1.96)")
+
+# Panel 3: IQR of the sample mean, including Cauchy
+iqr_all <- unlist(lapply(results, function(r) r$summary$iqr))
+plot(NA, xlim = range(n_grid), ylim = range(iqr_all[iqr_all > 0]), log = "xy",
+     xlab = "Sample size n (log scale)", ylab = "IQR of sample mean (log scale)",
+     main = "Spread shrinks - unless variance is infinite")
+for (k in names(results)) {
+  s <- results[[k]]$summary
+  keep <- s$iqr > 0
+  points(s$n[keep], s$iqr[keep], pch = 19, cex = 1.2, col = dist_cols[k], type = "b", lwd = 2)
+}
+legend("bottomleft", legend = sapply(dists, `[[`, "name"),
+       col = dist_cols, pch = 19, bty = "n", cex = 0.85)
+par(op)
+```
+
+Having gone over each population on its own, I noticed 3 patterns that stand out across all 5:
+
+1. **The standard error formula is reliable whenever variance is finite.** $\sigma/\sqrt{n}$ matched the simulated SD of $\bar X$ within a few percent for every finite-variance population at every *n*, even at *n* = 1. In other words, the spread of $\bar X$ is correct long before its shape is normal.
+2. **Skew shows up as unbalanced tails.** The normal population and the die keep both tails near 2.5% almost from the start. The 2 skewed populations, on the other hand, starve the lower tail and mostly overfill the upper one – the exponential's lower tail climbs toward 2.5% only slowly, and the binomial's jumps around on the way there because of its discreteness. Adding the 2 tails together would hide all of this, since the exponential's two-sided total is close to 5% at every *n*.
+3. **Infinite variance breaks everything.** The right panel shows 4 populations whose spread falls along roughly parallel lines with a slope of −1/2 (the $1/\sqrt{n}$ law), and one, the Cauchy, that stays completely flat. The binomial's line zigzags at small *n*, since its IQR can only be a multiple of $1/n$.
+
+## Double Checking With Exact Theory {#sec-exact}
+
+For the 4 finite-variance populations, the exact distribution of the sum $S = n\bar X$ is known: normal for the normal population, Gamma($n$, 1) for the exponential, Binomial($5n$, 0.10) for the binomial, and for the die, it can be built up one die at a time. This gives the exact probability of $Z_n < -1.96$ and of $Z_n > 1.96$ at **every** $n$, without any simulation noise. For the normal population both are exactly `r f(pnorm(-1.96), 4)` at every *n*, so I left it out of the figure.
+
+```{r}
+#| label: exact-plot
+#| fig-height: 3.8
+#| fig-cap: "The exact share of standardized means below −1.96 (solid line) and above +1.96 (dashed line) at every n from 1 to 1,000, with my simulated values on the grid (filled and open circles) and my acceptable range shaded in. The dotted vertical line marks the exact n from which both tails stay inside the range, and the die's 2 exact lines sit right on top of each other."
+
+op <- style_par(mfrow = c(1, 3), mar = c(4.5, 4.5, 3, 1))
+for (k in c("die", "binomial", "exponential")) {
+  e <- exact[[k]]; s <- results[[k]]$summary
+  plot(NA, xlim = range(n_grid), ylim = c(0, 0.09), log = "x",
+       xlab = "Sample size n (log scale)", ylab = "Share of standardized means",
+       main = dists[[k]]$name)
+  rect(0.5, crit$tail_lo, max(n_grid) * 2, crit$tail_hi, col = pal[["blush"]], border = NA)
+  abline(h = 0.025, col = "grey75", lty = 2)
+  abline(v = exact_n[[k]], col = pal[["muted"]], lty = 3, lwd = 1.5)
+  lines(e$n, e$lower, col = dist_cols[k], lwd = 1.2)
+  lines(e$n, e$upper, col = dist_cols[k], lwd = 1.2, lty = 2)
+  points(s$n, s$tail_lower, pch = 19, cex = 1.1, col = dist_cols[k])
+  points(s$n, s$tail_upper, pch = 1, cex = 1.1, col = dist_cols[k], lwd = 1.5)
+  if (k == "die") {
+    legend("topright", legend = c("Lower (exact)", "Upper (exact)", "Lower (simulated)", "Upper (simulated)"),
+           lty = c(1, 2, NA, NA), pch = c(NA, NA, 19, 1), col = pal[["ink"]], bty = "n", cex = 0.8)
+  }
+}
+par(op)
+```
+
+```{r}
+#| label: exact-table
+#| code-summary: "Show the code for the exact table"
+
+mc_se <- sqrt(0.025 * 0.975 / B)            # Monte Carlo SE of one simulated tail rate
+mark <- function(x) {                       # * = within one Monte Carlo SE of a cutoff
+  near <- pmin(abs(x - crit$tail_lo), abs(x - crit$tail_hi)) < mc_se
+  paste0(formatC(x, format = "f", digits = 4), ifelse(near, "*", ""))
+}
+exact_out <- data.frame(
+  n                   = n_grid,
+  `Die (each tail)`   = mark(exact$die$lower[n_grid]),
+  `Binomial lower`    = mark(exact$binomial$lower[n_grid]),
+  `Binomial upper`    = mark(exact$binomial$upper[n_grid]),
+  `Exponential lower` = mark(exact$exponential$lower[n_grid]),
+  `Exponential upper` = mark(exact$exponential$upper[n_grid]),
+  check.names = FALSE
+)
+knitr::kable(exact_out, align = "c", row.names = FALSE)
+
+# Gap between each simulated tail rate and its exact value, in Monte Carlo standard
+# errors (only where the exact probability is above 0)
+gap_z <- unlist(lapply(finite, function(k) {
+  s <- results[[k]]$summary; e <- exact[[k]][s$n, ]
+  p <- c(e$lower, e$upper)
+  ((c(s$tail_lower, s$tail_upper) - p) / sqrt(p * (1 - p) / B))[p > 0]
+}))
+zero_ok <- all(unlist(lapply(finite, function(k) {          # exact 0 => simulated 0?
+  s <- results[[k]]$summary; e <- exact[[k]][s$n, ]
+  c(s$tail_lower[e$lower == 0], s$tail_upper[e$upper == 0]) == 0
+})))
+```
+
+Values marked \* are within one Monte Carlo standard error (`r f(mc_se, 4)`) of a cutoff, so the simulated pass or fail at that grid point could flip with a different seed. There are 3 main things that stand out here:
+
+1. **The simulation agrees with exact theory.** Across the `r length(gap_z)` grid comparisons where the exact probability is above 0, the largest gap between a simulated tail rate and its exact value is `r f(max(abs(gap_z)), 1)` Monte Carlo standard errors, which is about what chance alone produces across that many comparisons. `r if (zero_ok) "And wherever the exact probability is 0 (for example the die at *n* = 1), the simulated rate is exactly 0 too." else ""`
+2. **The thresholds fall in between my grid points.** The exponential's tails move into my range smoothly, and its exact threshold is *n* = `r show_exact_n("exponential")`, between grid points 50 and 100. The die is inside the range from *n* = `r show_exact_n("die")` on.
+3. **Discreteness makes the binomial erratic.** Its exact tail probabilities move in a sawtooth as *n* changes, since the ±1.96 cutoff keeps crossing the possible values of $\bar X$. Some sample sizes fail because the lower tail is too thin, and others because the upper tail is too full, which is why its grid answer (`r show_first_n("binomial")`) ends up below its exact one (`r show_exact_n("binomial")`). The die has the same sawtooth, but its tails are balanced and its steps are much finer relative to its spread, so from *n* = `r show_exact_n("die")` on, its sawtooth stays inside my range.
+
+# So, Is the Number 30? {#sec-thirty}
+
+**No – 30 is a rule of thumb, not a law.** Based on my evidence, there's a much better way to think about it:
+
+- **For symmetric populations without long tails** (normal, die), 30 is far more than needed. The die was approximately normal by *n* = `r show_first_n("die")` on my grid (exact: *n* = `r show_exact_n("die")`).
+- **For strongly skewed populations** (exponential, $\gamma_1 = 2$), 30 isn't enough. The exponential needed *n* = `r show_first_n("exponential")` on my grid (exact: *n* = `r show_exact_n("exponential")`), and populations more skewed than the exponential, such as incomes or insurance claims, would need even more.
+- **For skewed, discrete populations** (binomial, $\gamma_1 \approx$ `r f(dists$binomial$gamma1, 2)`), 30 isn't enough either. Its skewness alone would only call for about *n* = `r round(exact_n[["exponential"]] * (dists$binomial$gamma1 / 2)^2)`, but its discreteness makes the tail rates erratic. It needed *n* = `r show_first_n("binomial")` on my grid, and *n* = `r show_exact_n("binomial")` before every sample size passes.
+- **When the variance is infinite** (Cauchy), no number works, since the CLT simply doesn't apply.
+
+Theory gives a rough guide here. The skewness of $\bar X$ is $\gamma_1/\sqrt{n}$, so the sample size needed grows with the *square* of the population's skewness – a population twice as skewed needs about 4 times as many observations, and lumpy discrete populations need extra on top of that. Beyond that guide, it's best to look at the histogram and Q–Q plot for the specific population in front of you, and check that each tail is about right, not just their total. A population that still looks visibly lopsided at *n* = 30 is a clear warning that 30 isn't enough, regardless of what any generic rule of thumb says.
+
+## How My Predictions Held Up
+
+Looking back, my predictions were luckily pretty much in-line with the results, with one big exception:
+
+1. **Normal: correct.** It passed at every *n*.
+2. **Die: correct.** It passed from *n* = `r show_first_n("die")` on my grid (exact: *n* = `r show_exact_n("die")`), right inside my predicted 2–10, and its tail rates did wobble at small *n* because of discreteness.
+3. **Binomial: wrong.** I called it "only mildly skewed" and expected it to land near 30, but this couldn't have been further from the truth. Its skewness of `r f(dists$binomial$gamma1, 2)` is more than half the exponential's, and its lumpiness only made things worse: it needed *n* = `r show_first_n("binomial")` on my grid and *n* = `r show_exact_n("binomial")` by the exact calculation.
+4. **Exponential: correct.** *n* = 30 wasn't enough – it needed *n* = `r show_exact_n("exponential")`, and its Q–Q plots were still visibly bent at *n* = 30.
+5. **Cauchy: correct.** It never passed, and the IQR of its sample means stayed near 2 at every *n*.
+
+As for my overall guess of 21, it was more than enough for the 2 symmetric populations, but too small for both of the skewed ones. It is clear to me now that the answer depends far more on the shape of the population than on any single number, funny or not.
+
+# Limitations and Surprises {#sec-limitations}
+
+**Limitations**
+
+- **Coarse grid of sample sizes.** I only simulated `r length(n_grid)` values of *n*, so "observed *n*" is just the first grid value from which every larger grid value passed. The exact calculation fills in the gaps here: the exponential's true threshold is *n* = `r show_exact_n("exponential")`, between my grid points 50 and 100, while the binomial's grid answer of `r show_first_n("binomial")` is too optimistic, since some sample sizes between grid points still fail.
+- **Monte Carlo error.** With $B$ = `r format(B, big.mark = ",")`, each simulated tail rate has a standard error of about `r f(sqrt(0.025 * 0.975 / B), 4)`. That's small next to my ±0.0075 windows, but several grid points have exact tail probabilities within one standard error of a cutoff (marked \* in the [exact table](#sec-exact)). As a result, a different seed could move the observed *n* by a grid step, most likely for the die, whose grid points 3 and 5 both sit near a cutoff. The exact *n* doesn't depend on the seed, though Monte Carlo noise does also affect how a histogram or Q–Q plot *looks* at a given *n*.
+- **My criterion is a choice.** A stricter or looser SE-ratio tolerance or tail window would shift the observed *n*. In particular, my first version counted both tails together, and under that rule the exponential "passed" at every *n*, even *n* = 1, since its overfull upper tail and nearly empty lower tail cancel out. Checking each tail separately fixed that, but the ±0.75-point window is still my own choice, and a wider window would let the skewed populations pass sooner. The visual check is subjective in the same way, since a different observer might judge a borderline histogram slightly differently.
+- **No kurtosis check.** Leaving kurtosis out means my numerical criterion could miss a tail-shape problem that doesn't show up in the tail shares at ±1.96 (for example, at ±3). I rely on the Q–Q plots to catch that, and none of the finite-variance populations showed it at the sample sizes where they passed.
+- **Only the iid case.** All 5 populations satisfy independence and identical distribution. Dependent or non-identical data could change both the speed of convergence and the correct standard error, and those cases aren't covered here.
+
+**Surprises**
+
+- **Discreteness persists.** The binomial and die sample means are always on a $1/n$ grid, so their Q–Q plots show stair-steps and their tail rates follow a sawtooth instead of settling down smoothly. For the binomial, skewness alone would suggest about *n* = `r round(exact_n[["exponential"]] * (dists$binomial$gamma1 / 2)^2)`, but the sawtooth kept it failing at scattered sample sizes up to *n* = `r show_exact_n("binomial") - 1`. Shapiro–Wilk also rejected the die up to *n* = `r max(results$die$summary$n[results$die$summary$sw_p < 0.05])` and the binomial up to *n* = `r max(results$binomial$summary$n[results$binomial$summary$sw_p < 0.05])`, even where they were practically normal.
+- **Two-sided checks can hide skew.** For the exponential, the exact share of standardized means beyond ±1.96 stays between `r pct(min(exact$exponential$lower + exact$exponential$upper))` and `r pct(max(exact$exponential$lower + exact$exponential$upper))` at every *n*, even *n* = 1, since extra probability in the right tail makes up for missing probability in the left. My first version of the criterion relied on that two-sided count and passed the exponential at *n* = 1, so checking the 2 tails separately was absolutely essential.
+- **The SE formula works long before normality does.** Even at *n* = 1, $\sigma/\sqrt{n}$ correctly gave the spread of every finite-variance population. The CLT is about *shape*, while the $1/\sqrt{n}$ law for spread holds regardless.
+- **Averaging can be useless.** For the Cauchy, the mean of 500 observations was just as variable as a single observation, which was quite surprising to see.
+
+# Reproducibility {#sec-reproducibility}
+
+- **Seed.** All of the randomness is controlled by `student_id_last4` (set to `r student_id_last4` in the `params` chunk – replace it with the last 4 digits of your student ID). Each population uses its own seed (`student_id_last4` + 1 through + 5, and + 100 for the Cauchy median comparison), so every section reproduces independently.
+- **Packages.** Only base R plus `knitr` (installed with Quarto/RStudio) are used, so no other packages are needed.
+- **Rendering.** Open `clt_project.qmd` in RStudio and click **Render**, or run `quarto render clt_project.qmd` in a terminal. All `r format(B, big.mark = ",")` × `r length(n_grid)` × `r length(dists)` simulations take well under a minute on a typical laptop.
+
+```{r}
+#| label: session-info
+#| code-summary: "Show my R session info"
+sessionInfo()
+```
